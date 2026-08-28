@@ -1,0 +1,11 @@
+# A imagem só precisa do servidor. A página (3,4 MB de base64) não vai junto:
+# ela é servida pelo WordPress, não por este container.
+index.html
+index.original.html
+vendor/
+.env
+.env.*
+.git/
+*.md
+*.pdf
+__pycache__/

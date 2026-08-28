@@ -1,0 +1,8 @@
+# Credenciais nunca entram no repositório.
+.env
+.env.*
+!.env.example
+
+# Saída de testes
+*.pdf
+__pycache__/

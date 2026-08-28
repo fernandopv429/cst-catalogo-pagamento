@@ -1,0 +1,25 @@
+# Alternativa ao build pack "Dockerfile" do Coolify, e o jeito de rodar local.
+#
+# Não há volume: o serviço não escreve em disco e não guarda estado. Cada pedido
+# vira uma preferência no Mercado Pago e o link volta na hora.
+services:
+  pagamento:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8098:8098"
+    environment:
+      # obrigatórias — sem qualquer uma das duas o serviço responde 503 (falha fechada)
+      MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN:?defina MERCADOPAGO_ACCESS_TOKEN}
+      API_KEY:                  ${API_KEY:?defina API_KEY}
+      # de onde o navegador pode chamar. Sem a origem certa aqui, o CORS derruba
+      # a chamada antes de chegar no código.
+      ORIGENS_PERMITIDAS: ${ORIGENS_PERMITIDAS:-https://chinasourcetrade.com}
+      HOST: 0.0.0.0
+      PORTA: 8098
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8098/saude', timeout=4).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
