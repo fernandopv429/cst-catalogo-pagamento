@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Endpoint de link de pagamento do catálogo CST — cria uma preferência no Mercado Pago.
 
-    python3 servidor_pagamento.py                 # sobe em 0.0.0.0:8099
+    python3 servidor_pagamento.py                 # sobe em 0.0.0.0:8098
     python3 servidor_pagamento.py --porta 9000
     python3 servidor_pagamento.py --env-file /caminho/.env.mercadopago
 
@@ -48,7 +48,7 @@ MP_TIMEOUT = 20                  # segundos de paciência com a API do Mercado P
 TETO_POR_MINUTO = 30             # preferências por IP por minuto
 VALOR_MAXIMO = 5_000_000.0       # trava de sanidade contra valor absurdo
 
-ORIGENS_PADRAO = "https://chinasourcetrade.com,http://localhost:8777"
+ORIGENS_PADRAO = "https://chinasourcetrade.com,https://catalogo.a5ecossistema.tech,http://localhost:8777"
 
 _env_extra = {}
 _batidas = collections.defaultdict(collections.deque)
@@ -170,6 +170,16 @@ class Handler(BaseHTTPRequestHandler):
         self._cabecalhos_cors()
         self.end_headers()
 
+    def do_HEAD(self):
+        # Alguns health checks (Coolify inclusive, dependendo da configuração) batem
+        # de HEAD. Sem isto o BaseHTTPRequestHandler responde 501 e o container é
+        # marcado como doente estando perfeitamente de pé.
+        vivo = self.path.rstrip("/") in ("", "/saude")
+        self.send_response(200 if vivo else 404)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self._cabecalhos_cors()
+        self.end_headers()
+
     def do_GET(self):
         if self.path.rstrip("/") in ("", "/saude"):
             self.responde(200, {
@@ -246,7 +256,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("--porta", type=int, default=int(os.environ.get("PORTA", 8099)))
+    p.add_argument("--porta", type=int, default=int(os.environ.get("PORTA", 8098)))
     p.add_argument("--host", default=os.environ.get("HOST", "0.0.0.0"))
     p.add_argument("--env-file", default=os.environ.get("MP_ENV_FILE"))
     args = p.parse_args()

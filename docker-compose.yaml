@@ -14,7 +14,7 @@ services:
       API_KEY:                  ${API_KEY:?defina API_KEY}
       # de onde o navegador pode chamar. Sem a origem certa aqui, o CORS derruba
       # a chamada antes de chegar no código.
-      ORIGENS_PERMITIDAS: ${ORIGENS_PERMITIDAS:-https://chinasourcetrade.com}
+      ORIGENS_PERMITIDAS: ${ORIGENS_PERMITIDAS:-https://chinasourcetrade.com,https://catalogo.a5ecossistema.tech}
       HOST: 0.0.0.0
       PORTA: 8098
     healthcheck:

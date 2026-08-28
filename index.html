@@ -568,6 +568,20 @@ const MARKUP_FACTOR = 2.25;
 const FREIGHT_PER_CBM = 110;
 const MIN_ORDER_USD = 3000;
 const FALLBACK_FX_RATE = 5.30;
+
+// --- Link de pagamento --------------------------------------------------
+// Quem fala com o Mercado Pago é o endpoint abaixo. O access token do MP mora
+// LÁ, no servidor, e nunca aqui: esta página é servida estática e pública, então
+// tudo que estiver neste arquivo é legível por qualquer visitante.
+const PAGAMENTO_ENDPOINT_PUBLICO = 'https://catalogo.a5ecossistema.tech';
+const PAGAMENTO_ENDPOINT_LOCAL = 'http://localhost:8098';
+const PAGAMENTO_ENDPOINT = ['localhost', '127.0.0.1'].includes(location.hostname)
+  ? PAGAMENTO_ENDPOINT_LOCAL
+  : PAGAMENTO_ENDPOINT_PUBLICO;
+// Esta chave é pública por construção — ela está no HTML. Barra varredura
+// automática, não um atacante decidido; a trava que vale é a lista de origens
+// (ORIGENS_PERMITIDAS) no servidor.
+const PAGAMENTO_API_KEY = '460hxSwnkZXdyuhYYmyeKjScqoaJIQ';
 const COLOR_OPTIONS = ["Padrão (conforme catálogo)", "Preto", "Cinza Grafite", "Vermelho", "Azul", "Amarelo", "Verde", "Branco", "A combinar"];
 
 const CST_COMPANY = {
@@ -1294,9 +1308,9 @@ document.getElementById('gerarLinkPagamentoBtn').addEventListener('click', async
   resultado.innerHTML = '';
 
   try {
-    const resp = await fetch('https://spfc--beb119269f4011f1a3561607ee4eb77e.web.val.run', {
+    const resp = await fetch(PAGAMENTO_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': PAGAMENTO_API_KEY },
       body: JSON.stringify({
         valor: t.totalBrl,
         descricao: `Pedido CST / Commander Brasil - ${clientData.nome || 'Cliente'}`,

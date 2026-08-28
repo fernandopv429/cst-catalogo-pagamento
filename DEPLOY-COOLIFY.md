@@ -30,7 +30,7 @@ o mais limpo é um repositório próprio (`cst-pagamento`, por exemplo) com este
 - **Build Pack: Dockerfile** (o `Dockerfile` na raiz já está pronto).
   Se preferir usar o compose, escolha **Docker Compose** e aponte para `docker-compose.yaml`.
 - **Port Exposes: `8098`** — é a porta que o container escuta.
-- **Domínio**: aponte um subdomínio seu, por exemplo `pagamento.nexusdevhub.com`.
+- **Domínio**: aponte um subdomínio seu, por exemplo `catalogo.a5ecossistema.tech`.
   O Coolify cuida do HTTPS. **Precisa ser HTTPS**: a página é servida em `https://`,
   e navegador não deixa página segura chamar endpoint `http://`.
 
@@ -42,7 +42,7 @@ Em **Environment Variables**, marcando todas como *Build variable? não* (são d
 |---|---|
 | `MERCADOPAGO_ACCESS_TOKEN` | o token da conta. **Marque como secret.** |
 | `API_KEY` | a chave que a página manda no `X-API-Key` |
-| `ORIGENS_PERMITIDAS` | `https://chinasourcetrade.com` |
+| `ORIGENS_PERMITIDAS` | `https://chinasourcetrade.com,https://catalogo.a5ecossistema.tech` |
 | `HOST` | `0.0.0.0` |
 | `PORTA` | `8098` |
 
@@ -66,9 +66,9 @@ variáveis chegaram. Assim o health check não gera tráfego na API do MP.
 
 ## 5. Conferir depois de subir
 
-    curl https://pagamento.nexusdevhub.com/saude
+    curl https://catalogo.a5ecossistema.tech/saude
 
-    curl -X POST https://pagamento.nexusdevhub.com/ \
+    curl -X POST https://catalogo.a5ecossistema.tech/ \
       -H "Content-Type: application/json" \
       -H "X-API-Key: SUA_API_KEY" \
       -d '{"valor":1.00,"descricao":"teste","cliente":{"nome":"Teste","email":"t@t.com"},"referencia":"teste-1"}'
@@ -89,7 +89,7 @@ const resp = await fetch('https://spfc--beb119269f4011f1a3561607ee4eb77e.web.val
 Troque por:
 
 ```js
-const resp = await fetch('https://pagamento.nexusdevhub.com/', {
+const resp = await fetch('https://catalogo.a5ecossistema.tech/', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json', 'X-API-Key': 'SUA_API_KEY' },
 ```
