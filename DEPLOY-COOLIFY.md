@@ -1,8 +1,12 @@
 # Subir o endpoint de pagamento no Coolify
 
-O que sobe é **só o `servidor_pagamento.py`**. A página (`index.html`) continua onde
-está, servida pelo WordPress em `chinasourcetrade.com` — ela só precisa apontar para a
-URL nova, e isso é uma linha de configuração no arquivo (ver o fim deste documento).
+O container serve **as duas coisas**: a página em `GET /` e o link de pagamento em
+`POST /`. Não conflitam porque um é GET e o outro é POST.
+
+Isso é de propósito. Página e endpoint na mesma origem significa que o navegador nem
+chega a fazer preflight — some a classe inteira de erro de CORS, que é a forma mais
+comum de esse tipo de integração quebrar em produção (e quebrar de um jeito chato: o
+`curl` funciona e o botão não).
 
 O motivo de existir um servidor: o access token do Mercado Pago não pode ficar no HTML.
 A página é estática e pública; qualquer visitante leria o token e poderia gerar cobranças
@@ -10,19 +14,11 @@ na conta. O token vive aqui, e o navegador nunca o vê.
 
 ## 1. Colocar num repositório
 
-O Coolify puxa de um Git. Como este endpoint não tem nada a ver com a API de petições,
-o mais limpo é um repositório próprio (`cst-pagamento`, por exemplo) com estes arquivos:
+Já está feito: `github.com/fernandopv429/cst-catalogo-pagamento`, privado.
 
-    servidor_pagamento.py
-    Dockerfile
-    docker-compose.yaml
-    .dockerignore
-    .gitignore
-    .env.example
-    DEPLOY-COOLIFY.md
-
-**Não** suba o `.env`, o `index.html` nem o `vendor/` — o `.gitignore` e o
-`.dockerignore` já cuidam disso.
+Entram na imagem o `servidor_pagamento.py`, o `index.html` e o `vendor/`. Ficam de
+fora o `.env` (credenciais), o `index.original.html` (só comparação) e os `.md` —
+ver `.dockerignore`.
 
 ## 2. Criar o recurso no Coolify
 
@@ -56,17 +52,18 @@ por um token da conta real — e só por essa variável, nada no código muda.
 
 ## 4. Health check
 
-O Coolify pode usar `GET /saude`, que devolve:
+Use **`GET /saude`** — a raiz agora devolve a página, não JSON. Resposta esperada:
 
-    {"ok": true, "servico": "link de pagamento CST",
-     "token_configurado": true, "chave_configurada": true}
+    {"ok": true, "servico": "catálogo CST + link de pagamento",
+     "pagina_servida": true, "token_configurado": true, "chave_configurada": true}
 
 Ele **não** chama o Mercado Pago — só confirma que o processo está de pé e que as
 variáveis chegaram. Assim o health check não gera tráfego na API do MP.
 
 ## 5. Conferir depois de subir
 
-    curl https://catalogo.a5ecossistema.tech/saude
+    curl https://catalogo.a5ecossistema.tech/saude          # deve trazer pagina_servida: true
+    curl -I https://catalogo.a5ecossistema.tech/            # deve ser text/html, ~3,4 MB
 
     curl -X POST https://catalogo.a5ecossistema.tech/ \
       -H "Content-Type: application/json" \
@@ -75,30 +72,19 @@ variáveis chegaram. Assim o health check não gera tráfego na API do MP.
 
 Resposta esperada: `{"link":"https://www.mercadopago.com.br/checkout/...", "preference_id":"..."}`.
 
-## 6. Apontar a página para o endpoint novo
+## 6. A página
 
-No `index.html`, dentro do bloco `<script>` principal, a chamada de pagamento está em
-`document.getElementById('gerarLinkPagamentoBtn')`. Hoje ela é assim:
+Não há nada a editar: o `index.html` já aponta para `https://catalogo.a5ecossistema.tech`
+e manda a chave no cabeçalho `X-API-Key`. O endereço é escolhido sozinho — em `localhost`
+a página fala com o servidor local, em qualquer outro host com o domínio público. A mesma
+cópia serve para testar e para publicar.
 
-```js
-const resp = await fetch('https://spfc--beb119269f4011f1a3561607ee4eb77e.web.val.run', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-```
+Depois do deploy, a página fica em `https://catalogo.a5ecossistema.tech/`.
 
-Troque por:
-
-```js
-const resp = await fetch('https://catalogo.a5ecossistema.tech/', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json', 'X-API-Key': 'SUA_API_KEY' },
-```
-
-Depois re-suba o `index.html` para `wp-content/uploads/`.
-
-O resto do corpo da chamada não muda — o servidor foi escrito para aceitar exatamente o
-formato que a página já mandava (`valor`, `descricao`, `cliente{nome,email}`, `referencia`)
-e devolver exatamente o que ela já espera (`{link}` no sucesso, `{error}` na falha).
+A cópia no WordPress (`chinasourcetrade.com/wp-content/uploads/...`) é opcional a partir
+daqui. Se você mantiver as duas, a do WordPress chama o endpoint de outro domínio —
+funciona, porque `chinasourcetrade.com` está em `ORIGENS_PERMITIDAS`, mas aí você passa a
+ter dois lugares para atualizar a cada mudança. Servir só pelo Coolify evita isso.
 
 ## O que protege este endpoint
 

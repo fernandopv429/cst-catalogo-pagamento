@@ -10,7 +10,7 @@ baixada em 28/08/2026.
 | `index.html` | A página, com as alterações listadas abaixo |
 | `index.original.html` | O HTML exatamente como veio do servidor, sem nenhuma alteração |
 | `vendor/html2pdf.bundle.min.js` | Biblioteca de geração de PDF (v0.10.1), baixada do cdnjs |
-| `servidor_pagamento.py` | Endpoint que cria a preferência no Mercado Pago e devolve o link (stdlib só) |
+| `servidor_pagamento.py` | Serve a página em `GET /` e cria a preferência do Mercado Pago em `POST /` (stdlib só) |
 | `Dockerfile` / `docker-compose.yaml` | Empacotamento do endpoint para o Coolify |
 | `.env.example` | Variáveis que o endpoint precisa (o `.env` real fica fora do repo) |
 | `DEPLOY-COOLIFY.md` | Passo a passo para subir o endpoint e apontar a página para ele |

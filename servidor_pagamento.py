@@ -50,6 +50,17 @@ VALOR_MAXIMO = 5_000_000.0       # trava de sanidade contra valor absurdo
 
 ORIGENS_PADRAO = "https://chinasourcetrade.com,https://catalogo.a5ecossistema.tech,http://localhost:8777"
 
+# A página é servida por este mesmo processo quando os arquivos estão presentes.
+# Página e endpoint na mesma origem = o navegador nem chega a fazer preflight, e a
+# lista de origens acima só importa para quem servir a página de outro domínio.
+PAGINA = AQUI / "index.html"
+VENDOR = AQUI / "vendor"
+TIPOS = {
+    ".js": "application/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".html": "text/html; charset=utf-8",
+}
+
 _env_extra = {}
 _batidas = collections.defaultdict(collections.deque)
 _trava = threading.Lock()
@@ -161,7 +172,21 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(corpo)))
         self._cabecalhos_cors()
         self.end_headers()
-        self.wfile.write(corpo)
+        if self.command != "HEAD":
+            self.wfile.write(corpo)
+
+    def serve_arquivo(self, alvo, cache):
+        try:
+            dados = alvo.read_bytes()
+        except OSError:
+            return self.responde(404, {"error": "arquivo não encontrado"})
+        self.send_response(200)
+        self.send_header("Content-Type", TIPOS.get(alvo.suffix, "application/octet-stream"))
+        self.send_header("Content-Length", str(len(dados)))
+        self.send_header("Cache-Control", cache)
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(dados)
 
     # ---- rotas ----------------------------------------------------------
 
@@ -173,23 +198,42 @@ class Handler(BaseHTTPRequestHandler):
     def do_HEAD(self):
         # Alguns health checks (Coolify inclusive, dependendo da configuração) batem
         # de HEAD. Sem isto o BaseHTTPRequestHandler responde 501 e o container é
-        # marcado como doente estando perfeitamente de pé.
-        vivo = self.path.rstrip("/") in ("", "/saude")
-        self.send_response(200 if vivo else 404)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self._cabecalhos_cors()
-        self.end_headers()
+        # marcado como doente estando perfeitamente de pé. As respostas abaixo já
+        # omitem o corpo quando o método é HEAD.
+        self.do_GET()
+
+    def saude(self):
+        self.responde(200, {
+            "ok": True,
+            "servico": "catálogo CST + link de pagamento",
+            "pagina_servida": PAGINA.exists(),
+            "token_configurado": bool(env("MERCADOPAGO_ACCESS_TOKEN")),
+            "chave_configurada": bool(env("API_KEY")),
+        })
 
     def do_GET(self):
-        if self.path.rstrip("/") in ("", "/saude"):
-            self.responde(200, {
-                "ok": True,
-                "servico": "link de pagamento CST",
-                "token_configurado": bool(env("MERCADOPAGO_ACCESS_TOKEN")),
-                "chave_configurada": bool(env("API_KEY")),
-            })
-        else:
-            self.responde(404, {"error": "rota não encontrada"})
+        rota = self.path.split("?")[0]
+        limpa = rota.rstrip("/")
+
+        if limpa == "/saude":
+            return self.saude()
+
+        if limpa in ("", "/index.html"):
+            # Sem a página na imagem (deploy só do endpoint), a raiz continua
+            # devolvendo a saúde, como era antes.
+            if PAGINA.exists():
+                return self.serve_arquivo(PAGINA, "no-cache")
+            return self.saude()
+
+        if rota.startswith("/vendor/"):
+            # Caminho resolvido e conferido contra a pasta vendor: sem isso um
+            # ../../etc/passwd sairia daqui.
+            alvo = (VENDOR / rota[len("/vendor/"):]).resolve()
+            if VENDOR.resolve() in alvo.parents and alvo.is_file():
+                return self.serve_arquivo(alvo, "public, max-age=86400")
+            return self.responde(404, {"error": "arquivo não encontrado"})
+
+        return self.responde(404, {"error": "rota não encontrada"})
 
     def do_POST(self):
         if self.path.split("?")[0].rstrip("/") not in ("", "/pagamento"):

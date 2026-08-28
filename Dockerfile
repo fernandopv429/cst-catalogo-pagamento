@@ -12,6 +12,10 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 COPY servidor_pagamento.py .
+# A página e a lib de PDF: o mesmo processo serve as duas coisas, então página e
+# endpoint ficam na mesma origem e o navegador nem chega a fazer preflight.
+COPY index.html .
+COPY vendor/ ./vendor/
 
 # Sem root: o processo não escreve em disco, não há motivo para ter permissão.
 RUN useradd --system --create-home --uid 10001 pagamento \
