@@ -300,7 +300,11 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("--porta", type=int, default=int(os.environ.get("PORTA", 8098)))
+    # PORT (sem A) é o nome que várias PaaS injetam sozinhas, Coolify incluso em
+    # algumas configurações. Se só ela vier, obedecemos: escutar numa porta enquanto
+    # o proxy procura em outra é justamente o que produz Bad Gateway.
+    porta_padrao = int(os.environ.get("PORTA") or os.environ.get("PORT") or 8098)
+    p.add_argument("--porta", type=int, default=porta_padrao)
     p.add_argument("--host", default=os.environ.get("HOST", "0.0.0.0"))
     p.add_argument("--env-file", default=os.environ.get("MP_ENV_FILE"))
     args = p.parse_args()
