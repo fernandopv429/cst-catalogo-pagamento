@@ -24,6 +24,6 @@ EXPOSE 8098
 # `docker compose` local. /saude não chama o Mercado Pago — só confirma que o
 # processo está de pé e se as variáveis estão presentes.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD python3 -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8098/saude', timeout=4).status==200 else 1)"
+    CMD ["python3", "-c", "import os,urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('PORTA','8098')+'/saude', timeout=4).status==200 else 1)"]
 
 CMD ["python3", "servidor_pagamento.py"]
