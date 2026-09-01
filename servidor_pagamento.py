@@ -48,7 +48,7 @@ MP_TIMEOUT = 20                  # segundos de paciência com a API do Mercado P
 TETO_POR_MINUTO = 30             # preferências por IP por minuto
 VALOR_MAXIMO = 5_000_000.0       # trava de sanidade contra valor absurdo
 
-ORIGENS_PADRAO = "https://chinasourcetrade.com,https://catalogo.a5ecossistema.tech,http://localhost:8777"
+ORIGENS_PADRAO = "https://catalogo.chinasourcetrade.com,https://chinasourcetrade.com,http://localhost:8777"
 
 # A página é servida por este mesmo processo quando os arquivos estão presentes.
 # Página e endpoint na mesma origem = o navegador nem chega a fazer preflight, e a

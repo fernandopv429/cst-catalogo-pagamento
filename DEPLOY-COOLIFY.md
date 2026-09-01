@@ -26,9 +26,28 @@ ver `.dockerignore`.
 - **Build Pack: Dockerfile** (o `Dockerfile` na raiz já está pronto).
   Se preferir usar o compose, escolha **Docker Compose** e aponte para `docker-compose.yaml`.
 - **Port Exposes: `8098`** — é a porta que o container escuta.
-- **Domínio**: aponte um subdomínio seu, por exemplo `catalogo.a5ecossistema.tech`.
-  O Coolify cuida do HTTPS. **Precisa ser HTTPS**: a página é servida em `https://`,
-  e navegador não deixa página segura chamar endpoint `http://`.
+- **Domínio**: `https://catalogo.chinasourcetrade.com`.
+  O Coolify cuida do HTTPS. **Precisa ser HTTPS**: navegador não deixa página segura
+  chamar endpoint `http://`.
+
+### DNS — o subdomínio precisa existir antes
+
+`chinasourcetrade.com` está atrás da **Cloudflare** (o domínio raiz resolve para
+`104.21.58.128` / `172.67.159.225`, faixas dela). Então o registro se cria no painel da
+Cloudflare, não no registrador:
+
+- Tipo **A**, nome `catalogo`, apontando para o IP do servidor do Coolify.
+- **Crie como "DNS only" (nuvem cinza), não "Proxied" (nuvem laranja).** Com o proxy
+  ligado, a Cloudflare termina o TLS antes de chegar no seu servidor e o desafio do
+  Let's Encrypt que o Coolify usa para emitir o certificado falha. Depois que o
+  certificado estiver emitido e o site no ar, dá para ligar o proxy se quiser.
+
+Confira antes de seguir:
+
+    dig +short catalogo.chinasourcetrade.com
+
+Sem resposta = o registro ainda não existe (ou não propagou), e nenhuma configuração do
+Coolify vai adiantar.
 
 ## 3. Variáveis de ambiente
 
@@ -38,7 +57,7 @@ Em **Environment Variables**, marcando todas como *Build variable? não* (são d
 |---|---|
 | `MERCADOPAGO_ACCESS_TOKEN` | o token da conta. **Marque como secret.** |
 | `API_KEY` | a chave que a página manda no `X-API-Key` |
-| `ORIGENS_PERMITIDAS` | `https://chinasourcetrade.com,https://catalogo.a5ecossistema.tech` |
+| `ORIGENS_PERMITIDAS` | `https://catalogo.chinasourcetrade.com,https://chinasourcetrade.com` |
 | `HOST` | `0.0.0.0` |
 | `PORTA` | `8098` |
 
@@ -62,10 +81,10 @@ variáveis chegaram. Assim o health check não gera tráfego na API do MP.
 
 ## 5. Conferir depois de subir
 
-    curl https://catalogo.a5ecossistema.tech/saude          # deve trazer pagina_servida: true
-    curl -I https://catalogo.a5ecossistema.tech/            # deve ser text/html, ~3,4 MB
+    curl https://catalogo.chinasourcetrade.com/saude          # deve trazer pagina_servida: true
+    curl -I https://catalogo.chinasourcetrade.com/            # deve ser text/html, ~3,4 MB
 
-    curl -X POST https://catalogo.a5ecossistema.tech/ \
+    curl -X POST https://catalogo.chinasourcetrade.com/ \
       -H "Content-Type: application/json" \
       -H "X-API-Key: SUA_API_KEY" \
       -d '{"valor":1.00,"descricao":"teste","cliente":{"nome":"Teste","email":"t@t.com"},"referencia":"teste-1"}'
@@ -74,12 +93,12 @@ Resposta esperada: `{"link":"https://www.mercadopago.com.br/checkout/...", "pref
 
 ## 6. A página
 
-Não há nada a editar: o `index.html` já aponta para `https://catalogo.a5ecossistema.tech`
+Não há nada a editar: o `index.html` já aponta para `https://catalogo.chinasourcetrade.com`
 e manda a chave no cabeçalho `X-API-Key`. O endereço é escolhido sozinho — em `localhost`
 a página fala com o servidor local, em qualquer outro host com o domínio público. A mesma
 cópia serve para testar e para publicar.
 
-Depois do deploy, a página fica em `https://catalogo.a5ecossistema.tech/`.
+Depois do deploy, a página fica em `https://catalogo.chinasourcetrade.com/`.
 
 A cópia no WordPress (`chinasourcetrade.com/wp-content/uploads/...`) é opcional a partir
 daqui. Se você mantiver as duas, a do WordPress chama o endpoint de outro domínio —

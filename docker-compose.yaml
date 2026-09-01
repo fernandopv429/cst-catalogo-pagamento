@@ -14,11 +14,11 @@ services:
       API_KEY:                  ${API_KEY:?defina API_KEY}
       # de onde o navegador pode chamar. Sem a origem certa aqui, o CORS derruba
       # a chamada antes de chegar no código.
-      ORIGENS_PERMITIDAS: ${ORIGENS_PERMITIDAS:-https://chinasourcetrade.com,https://catalogo.a5ecossistema.tech}
+      ORIGENS_PERMITIDAS: ${ORIGENS_PERMITIDAS:-https://catalogo.chinasourcetrade.com,https://chinasourcetrade.com}
       HOST: 0.0.0.0
       PORTA: 8098
     healthcheck:
-      test: ["CMD", "python3", "-c", "import os,urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('PORTA','8098')+'/saude', timeout=4).status==200 else 1)"]
+      test: ["CMD", "python3", "-c", "import os,urllib.request,sys; p=os.environ.get('PORTA') or os.environ.get('PORT') or '8098'; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:'+p+'/saude', timeout=4).status==200 else 1)"]
       interval: 30s
       timeout: 5s
       retries: 3
